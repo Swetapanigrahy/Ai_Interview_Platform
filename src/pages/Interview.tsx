@@ -88,19 +88,21 @@ export default function Interview() {
     }
     setPartial("");
     setPhase("listening");
-    if (!recognizerRef.current) {
-      recognizerRef.current = createRecognizer({
-        silenceMs: 2000,
-        onPartial: (t) => setPartial(t),
-        onFinal: (text) => handleCandidateFinal(text),
-        onError: (err) => {
-          if (err === "not-allowed" || err === "service-not-allowed") {
-            toast({ title: "Microphone blocked", description: "Please allow mic access in your browser.", variant: "destructive" });
-            setPhase("idle");
-          }
-        },
-      });
-    }
+
+    // FIX: Always create a fresh recognizer for each listening session.
+    // Reusing the same instance keeps stale internal state (finalized=true)
+    // which causes all speech after Q1 to be silently dropped on mobile.
+    recognizerRef.current = createRecognizer({
+      silenceMs: 1800,
+      onPartial: (t) => setPartial(t),
+      onFinal: (text) => handleCandidateFinal(text),
+      onError: (err) => {
+        if (err === "not-allowed" || err === "service-not-allowed") {
+          toast({ title: "Microphone blocked", description: "Please allow mic access in your browser.", variant: "destructive" });
+          setPhase("idle");
+        }
+      },
+    });
     recognizerRef.current.start();
   };
 
