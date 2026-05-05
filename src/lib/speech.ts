@@ -24,15 +24,20 @@ export function createRecognizer(opts: {
   if (!SpeechRecognitionCtor) {
     return { start: () => opts.onError?.("Speech recognition not supported"), stop: () => {} };
   }
+  const isMobile = typeof navigator !== "undefined" &&
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
   const recog: SR = new SpeechRecognitionCtor();
-  recog.continuous = true;
+  // Mobile browsers (especially iOS Safari) don't support continuous mode reliably.
+  recog.continuous = !isMobile;
   recog.interimResults = true;
   recog.lang = "en-US";
 
   let finalBuffer = "";
   let silenceTimer: number | null = null;
   let running = false;
-  const silenceMs = opts.silenceMs ?? 2000;
+  let finalized = false;
+  const silenceMs = opts.silenceMs ?? (isMobile ? 1500 : 2000);
 
   const clearSilence = () => {
     if (silenceTimer) { window.clearTimeout(silenceTimer); silenceTimer = null; }
@@ -41,8 +46,10 @@ export function createRecognizer(opts: {
     clearSilence();
     silenceTimer = window.setTimeout(() => {
       const text = finalBuffer.trim();
-      if (text.length > 0) {
+      if (text.length > 0 && !finalized) {
+        finalized = true;
         finalBuffer = "";
+        running = false;
         try { recog.stop(); } catch {}
         opts.onFinal(text);
       }
@@ -60,13 +67,17 @@ export function createRecognizer(opts: {
     armSilence();
   };
   recog.onerror = (e: any) => {
-    if (e.error !== "no-speech" && e.error !== "aborted") {
+    if (e.error === "no-speech") {
+      // On mobile, no-speech fires often; let onend restart.
+      return;
+    }
+    if (e.error !== "aborted") {
       opts.onError?.(e.error || "recognition error");
     }
   };
   recog.onend = () => {
-    if (running) {
-      // auto-restart if turn hasn't ended
+    if (running && !finalized) {
+      // auto-restart if turn hasn't ended (needed on mobile non-continuous mode)
       try { recog.start(); } catch {}
     }
   };
@@ -74,6 +85,7 @@ export function createRecognizer(opts: {
   return {
     start: () => {
       finalBuffer = "";
+      finalized = false;
       running = true;
       try { recog.start(); armSilence(); } catch {}
     },
