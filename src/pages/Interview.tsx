@@ -112,8 +112,11 @@ export default function Interview() {
   const alexSays = (text: string, after: () => void) => {
     setPhase("alex-speaking");
     setTurns(t => [...t, { role: "alex", text, ts: Date.now() }]);
+    // Stop any active recognizer before TTS — mobile can't do both at once.
+    recognizerRef.current?.stop();
     speak(text, () => {
-      after();
+      // Small delay helps mobile release the audio session before mic restart.
+      window.setTimeout(after, 250);
     });
   };
 
