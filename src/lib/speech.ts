@@ -1,14 +1,16 @@
-// Browser-native speech: SpeechRecognition (STT) + speechSynthesis (TTS).
-// Works in Chrome / Edge / Safari (latest). Firefox: limited.
+// speech.ts — Fixed for mobile + desktop (Chrome, Edge, Safari, Android, iOS)
 
 type SR = any;
+
 const SpeechRecognitionCtor: any =
   (typeof window !== "undefined" &&
     ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) ||
   null;
 
-export const speechSupported = !!SpeechRecognitionCtor &&
-  typeof window !== "undefined" && "speechSynthesis" in window;
+export const speechSupported =
+  !!SpeechRecognitionCtor &&
+  typeof window !== "undefined" &&
+  "speechSynthesis" in window;
 
 export type Listener = {
   start: () => void;
@@ -22,166 +24,194 @@ export function createRecognizer(opts: {
   silenceMs?: number;
 }): Listener {
   if (!SpeechRecognitionCtor) {
-    return { start: () => opts.onError?.("Speech recognition not supported"), stop: () => {} };
+    return {
+      start: () => opts.onError?.("Speech recognition not supported"),
+      stop: () => {},
+    };
   }
 
-  const isMobile = typeof navigator !== "undefined" &&
+  const isMobile =
+    typeof navigator !== "undefined" &&
     /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
+  // Silence window: how long after last word before we treat it as "done speaking"
   const silenceMs = opts.silenceMs ?? (isMobile ? 1800 : 2000);
 
-  // FIX A: All mutable state lives here and is fully reset on every .start().
+  // ── mutable state (fully reset on every .start()) ──────────────────────────
   let recog: SR = null;
   let finalBuffer = "";
-  let silenceTimer: number | null = null;
+  let interimBuffer = "";
+  let silenceTimer: ReturnType<typeof setTimeout> | null = null;
   let running = false;
-  let finalized = false;
+  let committed = false; // true once onFinal has been fired for this turn
 
-  const clearSilence = () => {
+  // ── helpers ─────────────────────────────────────────────────────────────────
+  function clearSilence() {
     if (silenceTimer !== null) {
-      window.clearTimeout(silenceTimer);
+      clearTimeout(silenceTimer);
       silenceTimer = null;
     }
-  };
+  }
 
-  const armSilence = () => {
+  function commitFinal() {
+    // Only fire once per turn
+    if (committed || !running) return;
+    const text = (finalBuffer + interimBuffer).trim();
+    if (!text) return; // nothing to commit yet — wait longer
+    committed = true;
+    running = false;
     clearSilence();
-    silenceTimer = window.setTimeout(() => {
-      const text = finalBuffer.trim();
-      // FIX B: Only fire onFinal if there is actual text.
-      // Old code called armSilence() on .start() BEFORE the user spoke,
-      // so the timer fired with empty text, set finalized=true, and all
-      // future results were silently discarded for every question after Q1.
-      if (text.length > 0 && !finalized) {
-        finalized = true;
-        running = false;
-        clearSilence();
-        try { recog?.stop(); } catch {}
-        opts.onFinal(text);
-      }
-    }, silenceMs);
-  };
+    try { recog?.stop(); } catch {}
+    opts.onFinal(text);
+  }
 
-  const buildRecog = () => {
+  function armSilence() {
+    clearSilence();
+    silenceTimer = setTimeout(commitFinal, silenceMs);
+  }
+
+  // ── build a fresh SpeechRecognition instance ─────────────────────────────────
+  // BUG FIX: We NEVER reuse an old instance. Every .start() creates a new one.
+  // Reusing left `committed=true` permanently, silencing every answer after Q1.
+  function buildRecog(): SR {
     const r: SR = new SpeechRecognitionCtor();
-    r.continuous = !isMobile; // iOS Safari ignores this; we handle restarts in onend
-    r.interimResults = true;  // KEY: shows text immediately as user speaks
+
+    // continuous=true on desktop; iOS/Android ignore it so we auto-restart in onend
+    r.continuous = !isMobile;
+    // interimResults=true = words appear on screen AS you speak (not just after pause)
+    r.interimResults = true;
     r.lang = "en-US";
     r.maxAlternatives = 1;
 
     r.onresult = (e: any) => {
-      let interim = "";
+      let newFinal = "";
+      let newInterim = "";
+
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i];
         if (res.isFinal) {
-          finalBuffer += res[0].transcript + " ";
+          newFinal += res[0].transcript;
         } else {
-          interim += res[0].transcript;
+          newInterim += res[0].transcript;
         }
       }
-      // Show live partial text immediately as user speaks
-      opts.onPartial?.((finalBuffer + interim).trim());
-      // FIX C: Only arm silence timer when there is actual speech content
-      if ((finalBuffer + interim).trim().length > 0) {
+
+      if (newFinal) finalBuffer += newFinal + " ";
+      interimBuffer = newInterim;
+
+      const combined = (finalBuffer + interimBuffer).trim();
+      if (combined) {
+        // Show text immediately as user speaks
+        opts.onPartial?.(combined);
+        // Reset the silence countdown on every new word
         armSilence();
       }
     };
 
     r.onerror = (e: any) => {
-      // FIX D: no-speech and aborted are completely normal on mobile.
-      // no-speech fires on every pause; aborted fires on manual .stop().
-      // Neither should stop the session or show an error.
-      if (e.error === "no-speech" || e.error === "aborted") return;
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      const err: string = e.error ?? "";
+      // These are completely normal on mobile — never treat as fatal
+      if (err === "no-speech" || err === "aborted") return;
+      if (err === "not-allowed" || err === "service-not-allowed") {
         running = false;
         opts.onError?.("not-allowed");
         return;
       }
-      opts.onError?.(e.error || "recognition error");
+      // network / audio-capture etc — surface to caller
+      opts.onError?.(err || "recognition error");
     };
 
     r.onend = () => {
-      // FIX E: Auto-restart — iOS Safari and many Android browsers stop the
-      // recognizer after every short pause even with continuous=true.
-      // We restart as long as the user hasn't explicitly ended the turn.
-      if (running && !finalized) {
-        window.setTimeout(() => {
-          if (running && !finalized) {
+      // BUG FIX: iOS Safari and many Android browsers stop after EVERY short
+      // pause. Auto-restart keeps listening until the user has clearly finished.
+      if (running && !committed) {
+        setTimeout(() => {
+          if (running && !committed) {
             try { recog?.start(); } catch {}
           }
-        }, 150);
+        }, 100);
       }
     };
 
     return r;
-  };
+  }
 
+  // ── public API ───────────────────────────────────────────────────────────────
   return {
-    start: () => {
-      // FIX F: Reset ALL state — especially finalized — on every new start.
-      // Old code reused the same recognizer object across questions, so
-      // finalized stayed true after Q1 and silently killed Q2, Q3, etc.
+    start() {
+      // Full state reset — critical so Q2, Q3... work the same as Q1
       finalBuffer = "";
-      finalized = false;
+      interimBuffer = "";
+      committed = false;
       running = true;
       clearSilence();
 
-      // Always create a fresh instance to avoid InvalidStateError on mobile
+      // Tear down any previous instance before creating a new one
       try { recog?.abort(); } catch {}
       recog = buildRecog();
 
       try {
         recog.start();
-        // FIX G: Do NOT call armSilence() here.
-        // Old code armed a timer on .start() before the user spoke a single word,
-        // causing it to fire immediately with empty text and freeze the interview.
+        // BUG FIX: Do NOT arm the silence timer here.
+        // Old code did armSilence() on start(), meaning the timer fired
+        // immediately with empty text and then locked committed=… wait, worse:
+        // it tried commitFinal with empty text (returns early) but re-armed
+        // each time, causing weird race conditions on low-end phones.
       } catch {
-        opts.onError?.("Could not start speech recognition.");
+        opts.onError?.("Could not start microphone.");
       }
     },
 
-    stop: () => {
+    stop() {
       running = false;
-      finalized = true; // prevent onend from triggering a restart
+      committed = true; // stop onend from restarting
       clearSilence();
       try { recog?.stop(); } catch {}
     },
   };
 }
 
+// ── Text-to-speech ────────────────────────────────────────────────────────────
 export function speak(text: string, onEnd?: () => void) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     onEnd?.();
     return;
   }
+
   window.speechSynthesis.cancel();
+
   const u = new SpeechSynthesisUtterance(text);
   u.rate = 1;
   u.pitch = 1;
   u.lang = "en-US";
 
+  // Pick the best available voice
   const voices = window.speechSynthesis.getVoices();
   const preferred =
-    voices.find(v => /en-US/i.test(v.lang) && /Google|Natural|Samantha|Aria/i.test(v.name)) ||
-    voices.find(v => /en-US/i.test(v.lang)) ||
+    voices.find(
+      (v) => /en-US/i.test(v.lang) && /Google|Natural|Samantha|Aria/i.test(v.name)
+    ) ||
+    voices.find((v) => /en-US/i.test(v.lang)) ||
     voices[0];
   if (preferred) u.voice = preferred;
 
-  // FIX H: On mobile, speechSynthesis can stall silently and never fire onend.
-  // A watchdog timer ensures the interview always continues even if TTS hangs.
-  let ended = false;
-  const wordCount = text.trim().split(/\s+/).length;
-  const estimatedMs = Math.max(5000, (wordCount / 130) * 60000 + 3000);
-  const watchdog = window.setTimeout(() => {
-    if (!ended) { ended = true; onEnd?.(); }
-  }, estimatedMs);
+  // BUG FIX: speechSynthesis.onend sometimes NEVER fires on Android/iOS Chrome,
+  // freezing the interview permanently. A watchdog timer guarantees progress.
+  let done = false;
+  const fire = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(watchdog);
+    onEnd?.();
+  };
 
-  u.onend = () => {
-    if (!ended) { ended = true; window.clearTimeout(watchdog); onEnd?.(); }
-  };
-  u.onerror = () => {
-    if (!ended) { ended = true; window.clearTimeout(watchdog); onEnd?.(); }
-  };
+  // Estimate duration: ~130 wpm average + 3 s buffer
+  const wordCount = text.trim().split(/\s+/).length;
+  const watchdogMs = Math.max(5000, (wordCount / 130) * 60_000 + 3000);
+  const watchdog = setTimeout(fire, watchdogMs);
+
+  u.onend = fire;
+  u.onerror = fire;
 
   window.speechSynthesis.speak(u);
 }
