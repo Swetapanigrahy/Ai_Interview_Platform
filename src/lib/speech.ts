@@ -59,7 +59,7 @@ export async function requestMicPermission(): Promise<{ ok: boolean; error?: str
 }
 
 export function createRecognizer(opts: {
-  onPartial?: (final: string, interim: string) => void;
+  onPartial?: (text: string) => void;
   onFinal: (text: string) => void;
   onError?: (err: RecognizerError) => void;
   silenceMs?: number;
@@ -84,7 +84,6 @@ export function createRecognizer(opts: {
   const clearSilence = () => {
     if (silenceTimer) { window.clearTimeout(silenceTimer); silenceTimer = null; }
   };
-
   const armSilence = () => {
     clearSilence();
     silenceTimer = window.setTimeout(() => {
@@ -100,23 +99,13 @@ export function createRecognizer(opts: {
   };
 
   recog.onresult = (e: any) => {
-    // FIX: Keep interim completely separate from finalBuffer.
-    // interim is REPLACED every event (never appended).
-    // finalBuffer only grows when isFinal === true.
-    let interimOnly = "";
-
+    let interim = "";
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const r = e.results[i];
-      if (r.isFinal) {
-        finalBuffer += r[0].transcript + " ";
-      } else {
-        // REPLACE interim — never append — this prevents duplication
-        interimOnly = r[0].transcript;
-      }
+      if (r.isFinal) finalBuffer += r[0].transcript + " ";
+      else interim += r[0].transcript;
     }
-
-    // Pass final and interim separately so the UI can handle them correctly
-    opts.onPartial?.(finalBuffer.trim(), interimOnly.trim());
+    opts.onPartial?.((finalBuffer + interim).trim());
     armSilence();
   };
 
