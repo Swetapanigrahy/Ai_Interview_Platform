@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Volume2, PhoneOff, Loader2 } from "lucide-react";
 import { getRole } from "@/lib/roles";
-import { cancelSpeak, createRecognizer, speak, speechSupported, type Listener } from "@/lib/speech";
+import { cancelSpeak, createRecognizer, isSecureContextOk, requestMicPermission, speak, speechSupported, type Listener } from "@/lib/speech";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -81,7 +81,7 @@ export default function Interview() {
     if (!speechSupported) {
       toast({
         title: "Voice not supported",
-        description: "Please use Chrome, Edge, or Safari for hands-free voice mode.",
+        description: "Please use Chrome on Android or Safari on iOS for hands-free voice mode.",
         variant: "destructive",
       });
       return;
@@ -90,14 +90,19 @@ export default function Interview() {
     setPhase("listening");
     if (!recognizerRef.current) {
       recognizerRef.current = createRecognizer({
-        silenceMs: 2000,
         onPartial: (t) => setPartial(t),
         onFinal: (text) => handleCandidateFinal(text),
         onError: (err) => {
           if (err === "not-allowed" || err === "service-not-allowed") {
-            toast({ title: "Microphone blocked", description: "Please allow mic access in your browser.", variant: "destructive" });
+            toast({ title: "Microphone blocked", description: "Please allow microphone access in your browser settings.", variant: "destructive" });
+            setPhase("idle");
+          } else if (err === "network") {
+            toast({ title: "Network error", description: "Please check your connection and try again.", variant: "destructive" });
+          } else if (err === "audio-capture") {
+            toast({ title: "Microphone unavailable", description: "No microphone detected on this device.", variant: "destructive" });
             setPhase("idle");
           }
+          // no-speech: ignored, recognizer will auto-restart
         },
       });
     }
@@ -150,16 +155,24 @@ export default function Interview() {
   const beginInterview = async () => {
     if (!speechSupported) {
       toast({
-        title: "Voice not supported here",
-        description: "Use Chrome, Edge, or Safari — the browser's speech APIs are required.",
+        title: "Voice not supported in this browser",
+        description: "Please use Chrome on Android or Safari on iOS — the browser's speech APIs are required.",
         variant: "destructive",
       });
       return;
     }
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      toast({ title: "Microphone access required", variant: "destructive" });
+    if (!isSecureContextOk) {
+      toast({
+        title: "Secure connection required",
+        description: "Voice input only works over HTTPS. Please open the site over a secure connection.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // Request mic permission directly inside the user gesture (required on mobile).
+    const perm = await requestMicPermission();
+    if (!perm.ok) {
+      toast({ title: "Microphone access required", description: perm.error, variant: "destructive" });
       return;
     }
     setTurns([]);
@@ -240,6 +253,12 @@ export default function Interview() {
                   <MicOff className="h-12 w-12 text-muted-foreground" />
                 )}
               </div>
+              {phase === "listening" && (
+                <div className="absolute -top-1 -right-1 flex items-center gap-1 rounded-full bg-red-500/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                  REC
+                </div>
+              )}
             </div>
 
             <div className="text-center">
