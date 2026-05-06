@@ -28,7 +28,11 @@ export default function Interview() {
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [turns, setTurns] = useState<Turn[]>([]);
-  const [partial, setPartial] = useState("");
+
+  // FIX: Two separate state variables for final and interim transcript
+  const [partialFinal, setPartialFinal] = useState("");
+  const [partialInterim, setPartialInterim] = useState("");
+
   const [questionIdx, setQuestionIdx] = useState(0);
   const [followUpsThisQ, setFollowUpsThisQ] = useState(0);
 
@@ -43,7 +47,7 @@ export default function Interview() {
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     transcriptRef.current?.scrollTo({ top: transcriptRef.current.scrollHeight, behavior: "smooth" });
-  }, [turns, partial]);
+  }, [turns, partialFinal, partialInterim]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -86,11 +90,18 @@ export default function Interview() {
       });
       return;
     }
-    setPartial("");
+    // FIX: Reset both partial states when starting a new listening session
+    setPartialFinal("");
+    setPartialInterim("");
     setPhase("listening");
+
     if (!recognizerRef.current) {
       recognizerRef.current = createRecognizer({
-        onPartial: (t) => setPartial(t),
+        // FIX: onPartial now receives final and interim separately
+        onPartial: (final, interim) => {
+          setPartialFinal(final);
+          setPartialInterim(interim);
+        },
         onFinal: (text) => handleCandidateFinal(text),
         onError: (err) => {
           if (err === "not-allowed" || err === "service-not-allowed") {
@@ -111,7 +122,9 @@ export default function Interview() {
 
   const stopListening = () => {
     recognizerRef.current?.stop();
-    setPartial("");
+    // FIX: Clear both partial states on stop
+    setPartialFinal("");
+    setPartialInterim("");
   };
 
   const alexSays = (text: string, after: () => void) => {
@@ -130,6 +143,9 @@ export default function Interview() {
     stopListening();
     setTurns(t => [...t, { role: "you", text, ts: Date.now() }]);
     setPhase("thinking");
+
+    // FIX: Destroy recognizer so it's freshly created next startListening call
+    recognizerRef.current = null;
 
     window.setTimeout(() => {
       const reply = buildAlexReply(text);
@@ -178,8 +194,12 @@ export default function Interview() {
     setTurns([]);
     setQuestionIdx(0);
     setFollowUpsThisQ(0);
+    setPartialFinal("");
+    setPartialInterim("");
     qIdxRef.current = 0;
     followUpsRef.current = 0;
+    // FIX: Always destroy old recognizer on restart so state is clean
+    recognizerRef.current = null;
 
     const intro = `Hi, I'm Alex, your AI interviewer. Today we'll do a ${role.title.toLowerCase()} mock interview. ${role.questions[0]}`;
     alexSays(intro, () => startListening());
@@ -188,6 +208,7 @@ export default function Interview() {
   const endInterview = () => {
     cancelSpeak();
     stopListening();
+    recognizerRef.current = null;
     setPhase("ended");
   };
 
@@ -200,6 +221,13 @@ export default function Interview() {
       case "ended": return "Interview complete";
     }
   }, [phase]);
+
+  // FIX: Combine for display — final text + interim shown separately
+  const displayPartial = partialFinal
+    ? partialInterim
+      ? `${partialFinal} ${partialInterim}`
+      : partialFinal
+    : partialInterim;
 
   return (
     <>
@@ -263,9 +291,11 @@ export default function Interview() {
 
             <div className="text-center">
               <div className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{status}</div>
-              {phase === "listening" && partial && (
+              {/* FIX: Show clean combined partial — no duplication */}
+              {phase === "listening" && displayPartial && (
                 <div className="mt-3 text-base text-foreground italic max-w-xl">
-                  "{partial}"
+                  "{partialFinal && <span>{partialFinal} </span>}
+                  {partialInterim && <span className="text-muted-foreground">{partialInterim}</span>}"
                 </div>
               )}
             </div>
