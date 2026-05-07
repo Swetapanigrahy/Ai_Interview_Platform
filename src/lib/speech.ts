@@ -44,6 +44,7 @@ export async function requestMicPermission(): Promise<{ ok: boolean; error?: str
   }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Release immediately — SpeechRecognition will open its own stream.
     stream.getTracks().forEach(t => t.stop());
     return { ok: true };
   } catch (err: any) {
@@ -68,11 +69,13 @@ export function createRecognizer(opts: {
   }
 
   const recog: SR = new SpeechRecognitionCtor();
-  // iOS Safari: must be non-continuous and we manually restart in onend.
-  // Android Chrome: continuous + interim works well for longer answers.
-  recog.continuous = !isIOS;
-  recog.interimResults = !isIOS;
+  // Mobile browsers are much more stable in non-continuous mode.
+  // We manually restart in onend while the interview turn is still active.
+  recog.continuous = !isMobile;
+  recog.interimResults = true;
   recog.lang = "en-US";
+
+  const normalizeTranscript = (text: string) => text.replace(/\s+/g, " ").trim();
 
   // Track finalized chunks by result index so re-fires of the same index
   // (common on mobile / on restart) overwrite instead of duplicate.
@@ -85,9 +88,15 @@ export function createRecognizer(opts: {
   let finalized = false;
   const silenceMs = opts.silenceMs ?? (isMobile ? 1500 : 2000);
 
-  const currentFinal = () =>
-    priorSessionsFinal +
-    Array.from(finalChunks.keys()).sort((a, b) => a - b).map(k => finalChunks.get(k)!).join("");
+  const currentFinal = () => normalizeTranscript(
+    [
+      priorSessionsFinal,
+      Array.from(finalChunks.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([, value]) => value)
+        .join(" "),
+    ].filter(Boolean).join(" ")
+  );
 
   const clearSilence = () => {
     if (silenceTimer) { window.clearTimeout(silenceTimer); silenceTimer = null; }
@@ -109,20 +118,25 @@ export function createRecognizer(opts: {
   };
 
   recog.onresult = (e: any) => {
-    // Rebuild from scratch each event — never append blindly. Walk ALL
-    // results so we always have an authoritative view of the current session.
+    // Only process the changed slice. Mobile browsers can re-fire onresult for
+    // the same utterance, so using resultIndex prevents re-reading stale slots.
     let interim = "";
-    for (let i = 0; i < e.results.length; i++) {
+    let sawFinal = false;
+    for (let i = e.resultIndex; i < e.results.length; i++) {
       const r = e.results[i];
-      const t = r[0].transcript;
+      const t = normalizeTranscript(r[0]?.transcript || "");
+      if (!t) continue;
+
       if (r.isFinal) {
         finalChunks.set(i, t);
+        sawFinal = true;
       } else {
-        interim += t;
+        interim = normalizeTranscript([interim, t].filter(Boolean).join(" "));
       }
     }
-    lastInterim = interim;
-    const display = (currentFinal() + " " + interim).replace(/\s+/g, " ").trim();
+
+    lastInterim = sawFinal ? "" : interim;
+    const display = normalizeTranscript([currentFinal(), lastInterim].filter(Boolean).join(" "));
     opts.onPartial?.(display);
     armSilence();
   };
@@ -130,6 +144,7 @@ export function createRecognizer(opts: {
   recog.onerror = (e: any) => {
     const code = e?.error || "unknown";
     if (code === "no-speech") {
+      // Common on mobile during pauses — let onend restart.
       opts.onError?.("no-speech");
       return;
     }
