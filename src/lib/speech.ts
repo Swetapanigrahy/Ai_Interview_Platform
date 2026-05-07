@@ -44,7 +44,6 @@ export async function requestMicPermission(): Promise<{ ok: boolean; error?: str
   }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    // Release immediately — SpeechRecognition will open its own stream.
     stream.getTracks().forEach(t => t.stop());
     return { ok: true };
   } catch (err: any) {
@@ -75,11 +74,20 @@ export function createRecognizer(opts: {
   recog.interimResults = !isIOS;
   recog.lang = "en-US";
 
-  let finalBuffer = "";
+  // Track finalized chunks by result index so re-fires of the same index
+  // (common on mobile / on restart) overwrite instead of duplicate.
+  const finalChunks = new Map<number, string>();
+  // Finalized text from PREVIOUS recognition sessions (after iOS auto-restart).
+  let priorSessionsFinal = "";
+  let lastInterim = "";
   let silenceTimer: number | null = null;
   let running = false;
   let finalized = false;
   const silenceMs = opts.silenceMs ?? (isMobile ? 1500 : 2000);
+
+  const currentFinal = () =>
+    priorSessionsFinal +
+    Array.from(finalChunks.keys()).sort((a, b) => a - b).map(k => finalChunks.get(k)!).join("");
 
   const clearSilence = () => {
     if (silenceTimer) { window.clearTimeout(silenceTimer); silenceTimer = null; }
@@ -87,10 +95,12 @@ export function createRecognizer(opts: {
   const armSilence = () => {
     clearSilence();
     silenceTimer = window.setTimeout(() => {
-      const text = finalBuffer.trim();
+      const text = (currentFinal() + " " + lastInterim).trim();
       if (text.length > 0 && !finalized) {
         finalized = true;
-        finalBuffer = "";
+        finalChunks.clear();
+        priorSessionsFinal = "";
+        lastInterim = "";
         running = false;
         try { recog.stop(); } catch {}
         opts.onFinal(text);
@@ -99,20 +109,27 @@ export function createRecognizer(opts: {
   };
 
   recog.onresult = (e: any) => {
+    // Rebuild from scratch each event — never append blindly. Walk ALL
+    // results so we always have an authoritative view of the current session.
     let interim = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    for (let i = 0; i < e.results.length; i++) {
       const r = e.results[i];
-      if (r.isFinal) finalBuffer += r[0].transcript + " ";
-      else interim += r[0].transcript;
+      const t = r[0].transcript;
+      if (r.isFinal) {
+        finalChunks.set(i, t);
+      } else {
+        interim += t;
+      }
     }
-    opts.onPartial?.((finalBuffer + interim).trim());
+    lastInterim = interim;
+    const display = (currentFinal() + " " + interim).replace(/\s+/g, " ").trim();
+    opts.onPartial?.(display);
     armSilence();
   };
 
   recog.onerror = (e: any) => {
     const code = e?.error || "unknown";
     if (code === "no-speech") {
-      // Common on mobile during pauses — let onend restart.
       opts.onError?.("no-speech");
       return;
     }
@@ -122,14 +139,21 @@ export function createRecognizer(opts: {
 
   recog.onend = () => {
     // iOS auto-stops after each utterance; restart while turn is still active.
+    // Persist the current session's final text so the new session's result
+    // indices (which restart at 0) don't clobber what we already have.
     if (running && !finalized) {
+      priorSessionsFinal = currentFinal();
+      finalChunks.clear();
+      lastInterim = "";
       try { recog.start(); } catch {}
     }
   };
 
   return {
     start: () => {
-      finalBuffer = "";
+      finalChunks.clear();
+      priorSessionsFinal = "";
+      lastInterim = "";
       finalized = false;
       running = true;
       try { recog.start(); armSilence(); } catch {}
