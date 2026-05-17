@@ -17,7 +17,7 @@
 
 ## 📌 Overview
 
-**AI Interview Platform** is a full-stack, AI-powered mock interview web application that helps candidates prepare for technical and behavioral interviews through realistic, intelligent simulations. The platform generates role-specific questions, evaluates answers in real time, and provides detailed feedback — all in an intuitive, modern interface.
+**AI Interview Platform** is a full-stack, AI-powered mock interview web application that helps candidates prepare for technical and behavioral interviews through realistic, intelligent simulations. The platform generates role-specific questions, evaluates answers in real time, and provides detailed feedback - all in an intuitive, modern interface.
 
 Whether you're preparing for your first job or aiming for FAANG, this platform gives you a private, judgment-free space to sharpen your skills.
 
