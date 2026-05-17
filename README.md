@@ -25,7 +25,7 @@ Built for job seekers at every level - from first-timers to senior developers ta
 ## ✨ Features
 
 - 🎯 **AI-Generated Interview Questions** - Role and difficulty-specific questions generated dynamically
-- 🎙️ **Voice Agent (Hands-Free Interview Mode)** - Speak your answers aloud; the AI listens, understands, and responds back in voice — zero extra dependencies, powered by browser-native Web Speech APIs + OpenAI via Supabase Edge Functions
+- 🎙️ **Voice Agent (Hands-Free Interview Mode)** - Speak your answers aloud; the AI listens, understands, and responds back in voice - zero extra dependencies, powered by browser-native Web Speech APIs + OpenAI via Supabase Edge Functions
 - 💬 **Real-Time Answer Evaluation** - Instant AI-driven feedback on responses
 - 📊 **Performance Analytics** - Visual dashboards to track progress across sessions using Recharts
 - 🔐 **Authentication & Profiles** - Secure user auth and session management via Supabase
