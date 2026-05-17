@@ -30,7 +30,6 @@ Whether you're preparing for your first job or aiming for FAANG, this platform g
 - 📊 **Performance Analytics** - Visual dashboards to track progress across sessions using Recharts
 - 🔐 **Authentication & Profiles** - Secure user auth and session management via Supabase
 - 📁 **Session History** - Review past interviews and monitor improvement over time
-- 🌓 **Dark / Light Mode**  - Seamless theme switching with `next-themes
 - 📱 **Fully Responsive** - Optimized for desktop, tablet, and mobile
 - ⚡ **Blazing Fast** - Powered by Vite with SWC for near-instant builds and HMR
 - 🧪 **Tested** - Unit tests with Vitest and React Testing Library
