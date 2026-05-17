@@ -80,27 +80,7 @@ SpeechSynthesis API
       ↓
 Transcript saved to Supabase DB
 — available in Session History for later review
-```
-
-### Why No Vapi / ElevenLabs?
-
-| Approach | Cost | Extra Packages | Data Control |
-|---|---|---|---|
-| **This project (Web APIs + Supabase)** | ~$0.01/session | Zero | Full control |
-| Vapi / ElevenLabs | $0.05–$0.20/min | Heavy SDK | 3rd party |
-
-By using the browser's built-in `SpeechRecognition` for speech-to-text and `SpeechSynthesis` for text-to-speech, the voice pipeline requires **no additional npm packages** — keeping the bundle lean and the architecture clean.
-
-### Browser Support
-
-| Browser | Voice Input | Voice Output |
-|---|---|---|
-| Chrome / Edge | ✅ Full support | ✅ Full support |
-| Firefox | ⚠️ Partial | ✅ Full support |
-| Safari | ✅ Full support | ✅ Full support |
-
-> **Note:** For the best voice experience, Chrome or Edge is recommended.
-
+``
 ---
 
 ## 🚀 Getting Started
