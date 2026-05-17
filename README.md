@@ -3,7 +3,7 @@
 
 # 🤖 AI Interview Platform
 
-### Your intelligent mock interview coach — powered by AI, built for real-world readiness.
+### Your intelligent mock interview coach - powered by AI, built for real-world readiness.
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_App-4F46E5?style=for-the-badge)](https://ai-interview-platform-mu-liard.vercel.app)
 [![TypeScript](https://img.shields.io/badge/TypeScript-96.9%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -25,15 +25,14 @@ Whether you're preparing for your first job or aiming for FAANG, this platform g
 
 ## ✨ Features
 
-- 🎯 **AI-Generated Interview Questions** — Role and difficulty-specific questions generated dynamically
-- 💬 **Real-Time Answer Evaluation** — Instant AI-driven feedback on responses
-- 📊 **Performance Analytics** — Visual dashboards to track progress across sessions using Recharts
-- 🔐 **Authentication & Profiles** — Secure user auth and session management via Supabase
-- 📁 **Session History** — Review past interviews and monitor improvement over time
-- 🌓 **Dark / Light Mode** — Seamless theme switching with `next-themes`
-- 📱 **Fully Responsive** — Optimized for desktop, tablet, and mobile
-- ⚡ **Blazing Fast** — Powered by Vite with SWC for near-instant builds and HMR
-- 🧪 **Tested** — Unit tests with Vitest and React Testing Library
+- 🎯 **AI-Generated Interview Questions** - Role and difficulty-specific questions generated dynamically
+- 💬 **Real-Time Answer Evaluation** - Instant AI-driven feedback on responses
+- 📊 **Performance Analytics** - Visual dashboards to track progress across sessions using Recharts
+- 🔐 **Authentication & Profiles** - Secure user auth and session management via Supabase
+- 📁 **Session History** - Review past interviews and monitor improvement over time
+- 📱 **Fully Responsive** - Optimized for desktop, tablet, and mobile
+- ⚡ **Blazing Fast** - Powered by Vite with SWC for near-instant builds and HMR
+- 🧪 **Tested** - Unit tests with Vitest and React Testing Library
 
 ---
 
