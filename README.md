@@ -2,7 +2,7 @@
 
 # 🤖 AI Interview Platform
 
-### Your intelligent mock interview coach — powered by AI, built for real-world readiness.
+### Your intelligent mock interview coach - powered by AI, built for real-world readiness.
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_App-4F46E5?style=for-the-badge)](https://ai-interview-platform-mu-liard.vercel.app)
 [![TypeScript](https://img.shields.io/badge/TypeScript-96.9%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -16,7 +16,7 @@
 
 ## 📌 Overview
 
-**AI Interview Platform** is a full-stack, AI-powered mock interview web application that helps candidates prepare for technical and behavioral interviews through realistic, intelligent simulations. The platform generates role-specific questions, evaluates answers in real time, and provides detailed feedback — all in an intuitive, modern interface.
+**AI Interview Platform** is a full-stack, AI-powered mock interview web application that helps candidates prepare for technical and behavioral interviews through realistic, intelligent simulations. The platform generates role-specific questions, evaluates answers in real time, and provides detailed feedback - all in an intuitive, modern interface.
 
 Whether you're preparing for your first job or aiming for FAANG, this platform gives you a private, judgment-free space to sharpen your skills.
 
