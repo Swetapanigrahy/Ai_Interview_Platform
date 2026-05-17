@@ -58,7 +58,7 @@ Whether you're preparing for your first job or aiming for FAANG, this platform g
 
 ## 🎙️ Voice Agent - How It Works
 
-One of the standout features of this platform is the **hands-free voice interview mode**, built entirely without any third-party voice SDK. It uses browser-native APIs wired to an AI backend — making it lightweight, fast, and cost-effective.
+One of the standout features of this platform is the **hands-free voice interview mode**, built entirely without any third-party voice SDK. It uses browser-native APIs wired to an AI backend - making it lightweight, fast, and cost-effective.
 
 ### Architecture
 
