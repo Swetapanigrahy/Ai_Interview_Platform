@@ -1,9 +1,8 @@
-
 <div align="center">
 
 # 🤖 AI Interview Platform
 
-### Your intelligent mock interview coach - powered by AI, built for real-world readiness.
+### Your intelligent mock interview coach — powered by AI, built for real-world readiness.
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_App-4F46E5?style=for-the-badge)](https://ai-interview-platform-mu-liard.vercel.app)
 [![TypeScript](https://img.shields.io/badge/TypeScript-96.9%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -17,7 +16,7 @@
 
 ## 📌 Overview
 
-**AI Interview Platform** is a full-stack, AI-powered mock interview web application that helps candidates prepare for technical and behavioral interviews through realistic, intelligent simulations. The platform generates role-specific questions, evaluates answers in real time, and provides detailed feedback - all in an intuitive, modern interface.
+**AI Interview Platform** is a full-stack, AI-powered mock interview web application that helps candidates prepare for technical and behavioral interviews through realistic, intelligent simulations. The platform generates role-specific questions, evaluates answers in real time, and provides detailed feedback — all in an intuitive, modern interface.
 
 Whether you're preparing for your first job or aiming for FAANG, this platform gives you a private, judgment-free space to sharpen your skills.
 
@@ -25,14 +24,16 @@ Whether you're preparing for your first job or aiming for FAANG, this platform g
 
 ## ✨ Features
 
-- 🎯 **AI-Generated Interview Questions** - Role and difficulty-specific questions generated dynamically
-- 💬 **Real-Time Answer Evaluation** - Instant AI-driven feedback on responses
-- 📊 **Performance Analytics** - Visual dashboards to track progress across sessions using Recharts
-- 🔐 **Authentication & Profiles** - Secure user auth and session management via Supabase
-- 📁 **Session History** - Review past interviews and monitor improvement over time
-- 📱 **Fully Responsive** - Optimized for desktop, tablet, and mobile
-- ⚡ **Blazing Fast** - Powered by Vite with SWC for near-instant builds and HMR
-- 🧪 **Tested** - Unit tests with Vitest and React Testing Library
+- 🎯 **AI-Generated Interview Questions** — Role and difficulty-specific questions generated dynamically
+- 🎙️ **Voice Agent (Hands-Free Interview Mode)** — Speak your answers aloud; the AI listens, understands, and responds back in voice — zero extra dependencies, powered by browser-native Web Speech APIs + OpenAI via Supabase Edge Functions
+- 💬 **Real-Time Answer Evaluation** — Instant AI-driven feedback on responses
+- 📊 **Performance Analytics** — Visual dashboards to track progress across sessions using Recharts
+- 🔐 **Authentication & Profiles** — Secure user auth and session management via Supabase
+- 📁 **Session History** — Review past interviews and monitor improvement over time
+- 🌓 **Dark / Light Mode** — Seamless theme switching with `next-themes`
+- 📱 **Fully Responsive** — Optimized for desktop, tablet, and mobile
+- ⚡ **Blazing Fast** — Powered by Vite with SWC for near-instant builds and HMR
+- 🧪 **Tested** — Unit tests with Vitest and React Testing Library
 
 ---
 
@@ -48,8 +49,57 @@ Whether you're preparing for your first job or aiming for FAANG, this platform g
 | **Forms & Validation** | React Hook Form + Zod |
 | **Backend / Database** | Supabase (PostgreSQL + Auth + Realtime) |
 | **Charts / Analytics** | Recharts |
+| **Voice Agent** | Web Speech API (STT) + SpeechSynthesis (TTS) + OpenAI GPT-4o |
+| **AI Backend** | Supabase Edge Functions + OpenAI GPT-4o |
 | **Testing** | Vitest, React Testing Library, jsdom |
 | **Deployment** | Vercel |
+
+---
+
+## 🎙️ Voice Agent — How It Works
+
+One of the standout features of this platform is the **hands-free voice interview mode**, built entirely without any third-party voice SDK. It uses browser-native APIs wired to an AI backend — making it lightweight, fast, and cost-effective.
+
+### Architecture
+
+```
+🎤 User speaks
+      ↓
+Web Speech API (SpeechRecognition)
+— captures mic input, converts speech → text (free, built into Chrome/Edge)
+      ↓
+Supabase Edge Function
+— receives the transcript
+— sends it to OpenAI GPT-4o with a professional interviewer prompt
+— returns the AI's response
+      ↓
+SpeechSynthesis API
+— converts AI text → spoken audio (free, built into browser)
+      ↓
+🔊 User hears the AI interviewer speak back
+      ↓
+Transcript saved to Supabase DB
+— available in Session History for later review
+```
+
+### Why No Vapi / ElevenLabs?
+
+| Approach | Cost | Extra Packages | Data Control |
+|---|---|---|---|
+| **This project (Web APIs + Supabase)** | ~$0.01/session | Zero | Full control |
+| Vapi / ElevenLabs | $0.05–$0.20/min | Heavy SDK | 3rd party |
+
+By using the browser's built-in `SpeechRecognition` for speech-to-text and `SpeechSynthesis` for text-to-speech, the voice pipeline requires **no additional npm packages** — keeping the bundle lean and the architecture clean.
+
+### Browser Support
+
+| Browser | Voice Input | Voice Output |
+|---|---|---|
+| Chrome / Edge | ✅ Full support | ✅ Full support |
+| Firefox | ⚠️ Partial | ✅ Full support |
+| Safari | ✅ Full support | ✅ Full support |
+
+> **Note:** For the best voice experience, Chrome or Edge is recommended.
 
 ---
 
@@ -72,7 +122,10 @@ npm install
 
 # 3. Set up environment variables
 cp .env.example .env
-# Fill in your Supabase URL and anon key in .env
+# Fill in the following in your .env:
+# VITE_SUPABASE_URL=your_supabase_url
+# VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+# OPENAI_API_KEY=your_openai_key  (used in Supabase Edge Function)
 
 # 4. Start the development server
 npm run dev
@@ -98,11 +151,18 @@ npm run lint         # Lint the codebase
 ```
 src/
 ├── components/        # Reusable UI components (shadcn/ui + custom)
+│   └── VoiceInterview.tsx   # 🎙️ Voice agent UI component
 ├── pages/             # Route-level page components
 ├── hooks/             # Custom React hooks
+│   └── useVoiceAgent.ts     # 🎙️ Web Speech API + Supabase integration
 ├── lib/               # Utility functions and helpers
 ├── integrations/      # Supabase client and API integrations
 └── types/             # TypeScript type definitions
+
+supabase/
+└── functions/
+    └── ai-interviewer/
+        └── index.ts         # 🤖 Edge Function — calls OpenAI GPT-4o
 ```
 
 ---
