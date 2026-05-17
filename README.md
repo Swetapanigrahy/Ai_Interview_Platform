@@ -2,7 +2,7 @@
 
 # 🤖 AI Interview Platform
 
-### Your intelligent mock interview coach — powered by AI, built for real-world readiness.
+### Your intelligent mock interview coach - powered by AI, built for real-world readiness.
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_App-4F46E5?style=for-the-badge)](https://ai-interview-platform1313.vercel.app/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-96.9%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -148,7 +148,7 @@ supabase/
 
 ## 🌐 Live Demo
 
-🔗 **[https://ai-interview-platform1313.vercel.app](https://ai-interview-platform1313.vercel.app/)**
+🔗 **[https://ai-interview-platform1313.vercel.app](ai-interview-platform1313.vercel.app)**
 
 ---
 
