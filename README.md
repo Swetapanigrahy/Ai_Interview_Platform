@@ -24,16 +24,16 @@ Whether you're preparing for your first job or aiming for FAANG, this platform g
 
 ## ✨ Features
 
-- 🎯 **AI-Generated Interview Questions** — Role and difficulty-specific questions generated dynamically
-- 🎙️ **Voice Agent (Hands-Free Interview Mode)** — Speak your answers aloud; the AI listens, understands, and responds back in voice — zero extra dependencies, powered by browser-native Web Speech APIs + OpenAI via Supabase Edge Functions
-- 💬 **Real-Time Answer Evaluation** — Instant AI-driven feedback on responses
-- 📊 **Performance Analytics** — Visual dashboards to track progress across sessions using Recharts
-- 🔐 **Authentication & Profiles** — Secure user auth and session management via Supabase
-- 📁 **Session History** — Review past interviews and monitor improvement over time
-- 🌓 **Dark / Light Mode** — Seamless theme switching with `next-themes`
-- 📱 **Fully Responsive** — Optimized for desktop, tablet, and mobile
-- ⚡ **Blazing Fast** — Powered by Vite with SWC for near-instant builds and HMR
-- 🧪 **Tested** — Unit tests with Vitest and React Testing Library
+- 🎯 **AI-Generated Interview Questions** - Role and difficulty-specific questions generated dynamically
+- 🎙️ **Voice Agent (Hands-Free Interview Mode)** - Speak your answers aloud; the AI listens, understands, and responds back in voice — zero extra dependencies, powered by browser-native Web Speech APIs + OpenAI via Supabase Edge Functions
+- 💬 **Real-Time Answer Evaluation** - Instant AI-driven feedback on responses
+- 📊 **Performance Analytics** - Visual dashboards to track progress across sessions using Recharts
+- 🔐 **Authentication & Profiles** - Secure user auth and session management via Supabase
+- 📁 **Session History** - Review past interviews and monitor improvement over time
+- 🌓 **Dark / Light Mode**  - Seamless theme switching with `next-themes
+- 📱 **Fully Responsive** - Optimized for desktop, tablet, and mobile
+- ⚡ **Blazing Fast** - Powered by Vite with SWC for near-instant builds and HMR
+- 🧪 **Tested** - Unit tests with Vitest and React Testing Library
 
 ---
 
@@ -80,7 +80,7 @@ SpeechSynthesis API
       ↓
 Transcript saved to Supabase DB
 — available in Session History for later review
-``
+```
 ---
 
 ## 🚀 Getting Started
@@ -150,18 +150,6 @@ supabase/
 ## 🌐 Live Demo
 
 🔗 **[https://ai-interview-platform-mu-liard.vercel.app](https://ai-interview-platform-mu-liard.vercel.app)**
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-
-1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
 
 ---
 
