@@ -141,7 +141,7 @@ src/
 supabase/
 └── functions/
     └── ai-interviewer/
-        └── index.ts         # 🤖 Edge Function — calls OpenAI GPT-4o
+        └── index.ts         # 🤖 Edge Function - calls OpenAI GPT-4o
 ```
 
 ---
