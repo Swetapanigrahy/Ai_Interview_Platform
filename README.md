@@ -148,7 +148,7 @@ supabase/
 
 ## 🌐 Live Demo
 
-🔗 **[https://ai-interview-platform1313.vercel.app](ai-interview-platform1313.vercel.app)**
+🔗 **[https://ai-interview-platform1313.vercel.app](https://ai-interview-platform1313.vercel.app/)**
 
 ---
 
