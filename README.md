@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://your-image-link.png" alt="AI Interview Platform Banner" />
+  <img src="https://your-image-link.png" alt="" />
 </p>
 
 # 🤖 AI Interview Platform
