@@ -1,6 +1,5 @@
-<p align="center">
-  <img src="https://your-image-link.png" alt="" />
-</p>
+<<div align="center">
+
 
 # 🤖 AI Interview Platform
 
