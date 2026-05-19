@@ -1,4 +1,6 @@
-<div align="center">
+<p align="center">
+  <img src="https://your-image-link.png" alt="AI Interview Platform Banner" />
+</p>
 
 # 🤖 AI Interview Platform
 
